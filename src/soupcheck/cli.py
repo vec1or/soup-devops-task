@@ -3,6 +3,7 @@
 import argparse
 import json
 import platform
+from datetime import UTC, datetime
 from importlib.metadata import version
 from importlib.resources import files
 
@@ -19,6 +20,7 @@ def make_report() -> str:
             f"Application version: {version(DISTRIBUTION_NAME)}",
             f"Python version: {platform.python_version()}",
             f"Operating system: {platform.system()}",
+            f"Generated at (UTC): {datetime.now(UTC).isoformat()}",
             f"Message: {data['message']}",
         ]
     )
