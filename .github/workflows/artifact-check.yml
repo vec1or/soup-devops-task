@@ -2,6 +2,8 @@ name: Artifact Check
 
 on:
   push:
+    branches: ["**"]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -130,5 +132,65 @@ jobs:
       - name: Check the container
         shell: bash
         run: |
-          docker run --rm --network none soupcheck:ci --version
-          docker run --rm --network none soupcheck:ci report
+          version=$(docker run --rm --network none soupcheck:ci --version)
+          printf "%s\n" "$version"
+          [[ "$version" =~ ^soupcheck\ [0-9]+\.[0-9]+\.[0-9]+$ ]]
+          report=$(docker run --rm --network none soupcheck:ci report)
+          printf "%s\n" "$report"
+          grep -Fx "Application version: ${version#soupcheck }" <<< "$report"
+          grep -Fx "Operating system: Linux" <<< "$report"
+          grep -Fx "User: soupcheck" <<< "$report"
+          grep -Fx "Message: Everything works!" <<< "$report"
+
+  release-check:
+    name: Validate release metadata
+    if: github.event_name == 'push' && github.repository == 'vec1or/soup-devops-task' && github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Download tagged code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Download this run's distributions
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          path: dist
+          digest-mismatch: error
+
+      - name: Verify tag and distribution metadata
+        run: python ci/validate_release.py "$GITHUB_REF_NAME" dist
+
+  publish:
+    name: Publish to TestPyPI
+    if: github.event_name == 'push' && github.repository == 'vec1or/soup-devops-task' && startsWith(github.ref, 'refs/tags/v')
+    needs: [build, check, lint, docker, release-check]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/danial-soupcheck-demo/
+
+    steps:
+      - name: Download the validated distributions
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          path: dist
+          digest-mismatch: error
+
+      - name: Publish with Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          repository-url: https://test.pypi.org/legacy/

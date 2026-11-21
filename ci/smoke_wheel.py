@@ -1,16 +1,24 @@
 """Install one wheel in a clean environment and run its console command."""
 
 import os
+import platform
+import re
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 
-def run(command, workdir, environment):
+def run(command, workdir, environment, *, capture=False):
     command = [str(part) for part in command]
     print("Running:", " ".join(command), flush=True)
-    subprocess.run(command, cwd=workdir, env=environment, check=True)
+    result = subprocess.run(
+        command, cwd=workdir, env=environment, check=True, text=True,
+        stdout=subprocess.PIPE if capture else None,
+    )
+    if capture:
+        print(result.stdout, end="", flush=True)
+        return result.stdout
 
 
 def main():
@@ -44,8 +52,21 @@ def main():
             workdir,
             environment,
         )
-        run([cli, "--version"], workdir, environment)
-        run([cli, "report"], workdir, environment)
+        version_output = run([cli, "--version"], workdir, environment, capture=True)
+        match = re.fullmatch(r"soupcheck ([0-9]+\.[0-9]+\.[0-9]+)", version_output.strip())
+        if not match:
+            raise SystemExit(f"Unexpected version output: {version_output!r}")
+
+        report = run([cli, "report"], workdir, environment, capture=True)
+        expected = {
+            f"Application version: {match[1]}",
+            f"Python version: {platform.python_version()}",
+            f"Operating system: {platform.system()}",
+            "Message: Everything works!",
+        }
+        missing = expected.difference(report.splitlines())
+        if missing:
+            raise SystemExit(f"Missing expected report lines: {sorted(missing)}")
 
 
 if __name__ == "__main__":
