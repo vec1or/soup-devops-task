@@ -2,7 +2,9 @@
 
 import argparse
 import json
+import os
 import platform
+import pwd
 from datetime import datetime, timezone
 from importlib.metadata import version
 from importlib.resources import files
@@ -20,6 +22,7 @@ def make_report() -> str:
             f"Application version: {version(DISTRIBUTION_NAME)}",
             f"Python version: {platform.python_version()}",
             f"Operating system: {platform.system()}",
+            f"User: {pwd.getpwuid(os.getuid()).pw_name}",
             f"Generated at (UTC): {datetime.now(timezone.utc).isoformat()}",
             f"Message: {data['message']}",
         ]
