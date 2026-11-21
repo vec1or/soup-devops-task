@@ -17,7 +17,8 @@ GitHub's Actions API confirmed the run IDs, commit SHAs, and conclusions below. 
 - Codex ran Ruff and seven tests in WSL with Python 3.12.3, built the wheel and sdist, validated `v0.1.0`, observed nonzero exit for `v0.2.0`, and ran wheel smoke tests in a new venv outside the checkout.
 - Earlier applicant-reported checks include a local Docker build and successful `soupcheck --version` and `soupcheck report` in the container.
 - GitHub API confirmed creation of the `testpypi` environment and its tag-only `v*` policy. The TestPyPI simple and JSON project endpoints returned HTTP 404 on 2026-11-21. This shows no public listing for the name at check time.
-- TestPyPI release pending Trusted Publisher registration. No tag-triggered upload or registry installation has been verified. See [the intended TestPyPI project](https://test.pypi.org/project/danial-soupcheck-demo/).
+- The applicant registered the TestPyPI Trusted Publisher. Codex pushed `v0.1.0` at `7760132`. The [tag-triggered release run](https://github.com/vec1or/soup-devops-task/actions/runs/44900047105) passed the build, lint and tests, four wheel jobs, Docker, metadata validation, and the OIDC publish job.
+- The [TestPyPI 0.1.0 release](https://test.pypi.org/project/danial-soupcheck-demo/0.1.0/) lists the wheel and sdist. Codex installed the published wheel in a fresh Python 3.12.3 venv outside the checkout using TestPyPI as the sole index. The CLI returned `soupcheck 0.1.0` and the report contained the expected application version and packaged message.
 
 ## AI disclosure
 
