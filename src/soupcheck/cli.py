@@ -1,10 +1,9 @@
 """Print a small report using a file shipped inside the installed package."""
 
 import argparse
+import getpass
 import json
-import os
 import platform
-import pwd
 from datetime import datetime, timezone
 from importlib.metadata import version
 from importlib.resources import files
@@ -22,7 +21,7 @@ def make_report() -> str:
             f"Application version: {version(DISTRIBUTION_NAME)}",
             f"Python version: {platform.python_version()}",
             f"Operating system: {platform.system()}",
-            f"User: {pwd.getpwuid(os.getuid()).pw_name}",
+            f"User: {getpass.getuser()}",
             f"Generated at (UTC): {datetime.now(timezone.utc).isoformat()}",
             f"Message: {data['message']}",
         ]
